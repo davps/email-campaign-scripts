@@ -1,3 +1,5 @@
+"use strict";
+
 var fs = require('fs');
 var parse = require('csv-parse');
 var async = require('async');
@@ -24,6 +26,71 @@ var rate = function (opened, sends) {
 	var o =  opened / sends * 100;
 	var openRate = Math.round(o * 100) / 100;
 	return openRate;
+};
+
+var getStats = function (camp, field1, separator, field2) {
+	//TODO: I should refactor this to honor the DRY
+	var stats = {};
+	_(camp).each(function (value, key) {
+		if(
+			!value.user || !value.stats || 
+			(value.stats[2] !== 'Yes' && value.stats[2] !== 'No') || 
+			(value.stats[3] !== 'Yes' && value.stats[3] !== 'No')
+		){
+			throw new Error('Data set error for :' + key + JSON.stringify(value,2,2))
+		}
+		var occupation = value.user[2] || '';
+		var messageSent = value.user[3] || '';
+		var opened = (value.stats[2] === 'Yes');
+		var clicked = (value.stats[3] === 'Yes');
+
+		var ops = {
+			occupation: occupation,
+			messageSent: messageSent,
+			opened: opened,
+			clicked: clicked
+		};
+
+		var k = (ops[field1] || '') + separator + (ops[field2] || '');
+
+		if(!stats[k]){
+			stats[k] = {
+				opened: 0,
+				clicked: 0,
+				sends: 0,
+				openRate: 0,
+				clickRate: 0
+			}
+		}
+
+		if(opened){
+			stats[k].opened++;
+		}
+
+		if(clicked){
+			stats[k].clicked++;
+		}
+
+		stats[k].sends++;
+		stats[k].openRate = rate(stats[k].opened, stats[k].sends); //that's ok to recalculate for each iteration
+		stats[k].clickRate = rate(stats[k].clicked, stats[k].sends); //that's ok to recalculate for each iteration
+
+	});
+
+	console.log('Printed in format to copy/paste on excel:')
+	_(stats).each(function (value, key) {
+		console.log(key + '\t' + value.opened + '\t' + value.clicked + '\t' + value.sends + '\t' + value.openRate/100 + '\t' + value.clickRate/100);
+	});
+
+	_(stats).each(function (value, key) {
+		console.log(key + ':');
+		console.log('	Opens: ', value.opened);
+		console.log('	Clicks: ', value.clicked);
+		console.log('	Sends: ', value.sends);
+		console.log('	Open rate: ', value.openRate, '%');
+		console.log('	Click rate: ', value.clickRate, '%');
+	});
+		
 };
 
 var preCampaign, responseRate;
@@ -84,175 +151,13 @@ Promise.resolve()
 		sends++;
 	});
 	var openRate = rate(opened, sends);
-
 	console.log('Opens: ' + opened);
 	console.log('Sends: ' + sends);
 	console.log('Open rate: ' + openRate + '%');
 
-	var stats = {};
-	_(camp).each(function (value, key) {
-		if(
-			!value.user || !value.stats || 
-			(value.stats[2] !== 'Yes' && value.stats[2] !== 'No') || 
-			(value.stats[3] !== 'Yes' && value.stats[3] !== 'No')
-		){
-			throw new Error('Data set error for :' + key + JSON.stringify(value,2,2))
-		}
-		var occupation = value.user[2];
-		var messageSent = value.user[3];
-		var opened = (value.stats[2] === 'Yes');
-		var clicked = (value.stats[3] === 'Yes');	
-
-		var k = occupation + ' role with ' + messageSent;
-		if(!stats[k]){
-			stats[k] = {
-				opened: 0,
-				clicked: 0,
-				sends: 0,
-				openRate: 0,
-				clickRate: 0
-			}
-		}
-
-		if(opened){
-			stats[k].opened++;
-		}
-
-		if(clicked){
-			stats[k].clicked++;
-		}
-
-		stats[k].sends++;
-		stats[k].openRate = rate(stats[k].opened, stats[k].sends); //that's ok to recalculate for each iteration
-		stats[k].clickRate = rate(stats[k].clicked, stats[k].sends); //that's ok to recalculate for each iteration
-
-	});
-
-	_(stats).each(function (value, key) {
-		console.log(key + ':');
-		console.log('	Opens: ', value.opened);
-		console.log('	Clicks: ', value.clicked);
-		console.log('	Sends: ', value.sends);
-		console.log('	Open rate: ', value.openRate, '%');
-		console.log('	Click rate: ', value.clickRate, '%');
-	});
-
-	console.log('Printed in format to copy/paste on excel:')
-	_(stats).each(function (value, key) {
-		console.log(key + '\t' + value.opened + '\t' + value.clicked + '\t' + value.sends + '\t' + value.openRate/100 + '\t' + value.clickRate/100);
-	});
-
-	//console.log(stats);
-
-
-	//TODO: I should refactor this to honor the DRY
-	stats = {};
-	_(camp).each(function (value, key) {
-		if(
-			!value.user || !value.stats || 
-			(value.stats[2] !== 'Yes' && value.stats[2] !== 'No') || 
-			(value.stats[3] !== 'Yes' && value.stats[3] !== 'No')
-		){
-			throw new Error('Data set error for :' + key + JSON.stringify(value,2,2))
-		}
-		var occupation = value.user[2];
-		var messageSent = value.user[3];
-		var opened = (value.stats[2] === 'Yes');
-		var clicked = (value.stats[3] === 'Yes');	
-
-		var k = messageSent;
-		if(!stats[k]){
-			stats[k] = {
-				opened: 0,
-				clicked: 0,
-				sends: 0,
-				openRate: 0,
-				clickRate: 0
-			}
-		}
-
-		if(opened){
-			stats[k].opened++;
-		}
-
-		if(clicked){
-			stats[k].clicked++;
-		}
-
-		stats[k].sends++;
-		stats[k].openRate = rate(stats[k].opened, stats[k].sends); //that's ok to recalculate for each iteration
-		stats[k].clickRate = rate(stats[k].clicked, stats[k].sends); //that's ok to recalculate for each iteration
-
-	});
-
-	console.log('Printed in format to copy/paste on excel:')
-	_(stats).each(function (value, key) {
-		console.log(key + '\t' + value.opened + '\t' + value.clicked + '\t' + value.sends + '\t' + value.openRate/100 + '\t' + value.clickRate/100);
-	});
-
-	_(stats).each(function (value, key) {
-		console.log(key + ':');
-		console.log('	Opens: ', value.opened);
-		console.log('	Clicks: ', value.clicked);
-		console.log('	Sends: ', value.sends);
-		console.log('	Open rate: ', value.openRate, '%');
-		console.log('	Click rate: ', value.clickRate, '%');
-	});
-
-	//TODO: I should refactor this to honor the DRY
-	stats = {};
-	_(camp).each(function (value, key) {
-		if(
-			!value.user || !value.stats || 
-			(value.stats[2] !== 'Yes' && value.stats[2] !== 'No') || 
-			(value.stats[3] !== 'Yes' && value.stats[3] !== 'No')
-		){
-			throw new Error('Data set error for :' + key + JSON.stringify(value,2,2))
-		}
-		var occupation = value.user[2];
-		var messageSent = value.user[3];
-		var opened = (value.stats[2] === 'Yes');
-		var clicked = (value.stats[3] === 'Yes');	
-
-		var k = occupation;
-		if(!stats[k]){
-			stats[k] = {
-				opened: 0,
-				clicked: 0,
-				sends: 0,
-				openRate: 0,
-				clickRate: 0
-			}
-		}
-
-		if(opened){
-			stats[k].opened++;
-		}
-
-		if(clicked){
-			stats[k].clicked++;
-		}
-
-		stats[k].sends++;
-		stats[k].openRate = rate(stats[k].opened, stats[k].sends); //that's ok to recalculate for each iteration
-		stats[k].clickRate = rate(stats[k].clicked, stats[k].sends); //that's ok to recalculate for each iteration
-
-	});
-
-	console.log('Printed in format to copy/paste on excel:')
-	_(stats).each(function (value, key) {
-		console.log(key + '\t' + value.opened + '\t' + value.clicked + '\t' + value.sends + '\t' + value.openRate/100 + '\t' + value.clickRate/100);
-	});
-
-	_(stats).each(function (value, key) {
-		console.log(key + ':');
-		console.log('	Opens: ', value.opened);
-		console.log('	Clicks: ', value.clicked);
-		console.log('	Sends: ', value.sends);
-		console.log('	Open rate: ', value.openRate, '%');
-		console.log('	Click rate: ', value.clickRate, '%');
-	});
-
+	getStats(camp, 'occupation', 	' role with ', 'messageSent'	);
+	getStats(camp, '', 				''		, 'messageSent'	);
+	getStats(camp, 'occupation', 	''		, ''			);
 
 })
 .catch(function (err) {
