@@ -1,2 +1,3 @@
-data/
+data/pre_campaign.csv
+data/response_rate.csv
 node_modules/
