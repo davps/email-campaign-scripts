@@ -94,6 +94,7 @@ var getStats = function (data, filter1, separator, filter2) {
         console.log(key + '\t' + value.opened + '\t' + value.clicked + '\t' + value.sends + '\t' + (value.openRate / 100) + '\t' + (value.clickRate / 100));
     });
 
+    console.log('Printed on console-readable format:');
     _(stats).each(function (value, key) {
         console.log(key + ':');
         console.log('   Opens: ', value.opened);
@@ -154,25 +155,8 @@ Promise.resolve()
         //one 'Opened' information for each user of the pre-campaign
         //so our data is good
 
-        //it has a bug using those parameters so I will
-        //write a custom, simple code to replace this for now
-        // getStats(data, '', '', ''); 
-
-        //calculate general stats
-        var opened = 0;
-        var sends = 0;
-        _(data).each(function (value) {
-            if (value.count === 1) {
-                opened = opened + 1;
-            }
-            sends = sends + 1;
-        });
-        var openRate = rate(opened, sends);
-        console.log('Opens: ' + opened);
-        console.log('Sends: ' + sends);
-        console.log('Open rate: ' + openRate + '%');
-
         //calculated filtered stats
+        getStats(data, '', '', ''); 
         getStats(data, 'occupation', ' role with ', 'messageSent');
         getStats(data, '', '', 'messageSent');
         getStats(data, 'occupation', '', '');
