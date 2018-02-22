@@ -16,7 +16,6 @@
   },
   "homepage": "https://github.com/davps/email-campaign-scripts#readme",
   "dependencies": {
-    "async": "^2.6.0",
     "csv-parse": "^2.0.4",
     "underscore": "^1.8.3"
   }
